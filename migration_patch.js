@@ -1,4 +1,40 @@
 (() => {
+  if (window.__rpFriendlyCloudflareErrors) return;
+  window.__rpFriendlyCloudflareErrors = true;
+
+  const originalAlert = window.alert.bind(window);
+
+  function friendlyCloudflareMessage(value) {
+    const text = String(value ?? '');
+    const lower = text.toLowerCase();
+    const looksHtml = lower.includes('<!doctype html') || lower.includes('<html') || lower.includes('<head>');
+    const looksCloudflare = lower.includes('cloudflare') || lower.includes('durable object') || lower.includes('rows_written') || lower.includes('service requests are temporarily blocked');
+    const looksQuota = lower.includes('rows_written') || lower.includes('durable object') || lower.includes('100000') || lower.includes('temporarily blocked');
+
+    if (looksHtml && (looksCloudflare || text.includes('无法连接 CRM 服务器'))) {
+      if (looksQuota) {
+        return 'Cloudflare 今日数据库写入额度已用完。现有数据安全，写入功能将在额度重置后恢复。\n\n当前仍可能可以查看已有数据；请暂时不要继续批量迁移或大量写入。';
+      }
+      return 'Cloudflare 暂时拒绝了这次 CRM 请求。现有数据不会因此丢失。请稍后刷新再试；如果今天已经收到 Durable Objects 配额提醒，请等额度重置后再继续写入。';
+    }
+
+    if (looksQuota && looksCloudflare) {
+      return 'Cloudflare 今日数据库写入额度已用完。现有数据安全，写入功能将在额度重置后恢复。';
+    }
+    return null;
+  }
+
+  window.__rpFormatCloudflareError = function (value) {
+    return friendlyCloudflareMessage(value) || String(value ?? '未知错误');
+  };
+
+  window.alert = function (message) {
+    const friendly = friendlyCloudflareMessage(message);
+    return originalAlert(friendly || message);
+  };
+})();
+
+(() => {
   if (window.__rpOneClickMigration) return;
   window.__rpOneClickMigration = true;
   const previousRenderAdmin = typeof renderAdmin === 'function' ? renderAdmin : null;
@@ -79,7 +115,10 @@
         const b = await api('/api/bootstrap'); state.bootstrap = b;
         await Promise.all([loadSummary(), loadCategories()]);
         await loadDomains(); await loadLeads();
-      } catch (err) { toast(err.message); }
+      } catch (err) {
+        const msg = window.__rpFormatCloudflareError ? window.__rpFormatCloudflareError(err?.message || err) : (err?.message || String(err));
+        toast(msg);
+      }
       finally { loading(false); }
     };
   };
