@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "postinstall": "node build.js",
+    "dev": "node build.js && wrangler dev",
+    "deploy": "node build.js && wrangler deploy"
   },
   "devDependencies": {
     "wrangler": "^4.68.0"
