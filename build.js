@@ -14,4 +14,8 @@ for (const [rel, content] of Object.entries(files)) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, content, 'utf8');
 }
+const migrationPatch = path.join(root, 'migration_patch.js');
+if (fs.existsSync(migrationPatch)) {
+  fs.appendFileSync(path.join(root, 'public', 'cloud_patch.js'), '\n' + fs.readFileSync(migrationPatch, 'utf8'), 'utf8');
+}
 console.log(`Raiseproxy cloud source restored: ${Object.keys(files).length} files`);
