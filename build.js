@@ -18,8 +18,13 @@ for (const [rel, originalContent] of Object.entries(files)) {
   }
   fs.writeFileSync(target, content, 'utf8');
 }
-const migrationPatch = path.join(root, 'migration_patch.js');
-if (fs.existsSync(migrationPatch)) {
-  fs.appendFileSync(path.join(root, 'public', 'cloud_patch.js'), '\n' + fs.readFileSync(migrationPatch, 'utf8'), 'utf8');
+
+const patchTarget = path.join(root, 'public', 'cloud_patch.js');
+for (const patchName of ['migration_patch.js', 'export_patch.js']) {
+  const patchPath = path.join(root, patchName);
+  if (fs.existsSync(patchPath)) {
+    fs.appendFileSync(patchTarget, '\n' + fs.readFileSync(patchPath, 'utf8'), 'utf8');
+  }
 }
-console.log(`Raiseproxy cloud source restored: ${Object.keys(files).length} files; PBKDF2 iterations clamped to Cloudflare-compatible 100000`);
+
+console.log(`Raiseproxy cloud source restored: ${Object.keys(files).length} files; PBKDF2 iterations clamped to Cloudflare-compatible 100000; cloud patches loaded`);
